@@ -33,7 +33,7 @@ export type StructType<T extends SchemaDefinition> = {
 /**
  * A field within a schema definition.
  * Can be a primitive type, a fixed-length string, or a nested struct.
-*/
+ */
 // biome-ignore lint/suspicious/noExplicitAny: Circular Type Definition
 export type SchemaField = PrimitiveType | StringType | StructType<any>;
 
