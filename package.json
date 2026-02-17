@@ -1,6 +1,6 @@
 {
 	"name": "@lojhan/slab",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "High-performance SharedArrayBuffer structs for Node.js, Deno, Bun and Browser",
 	"keywords": [
 		"sharedarraybuffer",
@@ -11,7 +11,7 @@
 		"slab-allocator"
 	],
 	"author": "Vinicius Lojhan @lojhan",
-	"license": "ISC",
+	"license": "MIT",
 	"type": "module",
 	"main": "./dist/src/index.js",
 	"types": "./dist/src/index.d.ts",
