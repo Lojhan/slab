@@ -1,0 +1,42 @@
+{
+	"name": "slab",
+	"version": "1.0.0",
+	"description": "High-performance SharedArrayBuffer structs for Node.js and Browser",
+	"keywords": [
+		"sharedarraybuffer",
+		"struct",
+		"binary",
+		"performance",
+		"zero-copy",
+		"slab-allocator"
+	],
+	"author": "Vinicius Lojhan",
+	"license": "ISC",
+	"type": "module",
+	"main": "./dist/src/index.js",
+	"types": "./dist/src/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/src/index.js",
+			"types": "./dist/src/index.d.ts"
+		}
+	},
+	"files": [
+		"dist/src"
+	],
+	"scripts": {
+		"build": "tsc",
+		"test": "tsc && node --test dist/test/*.test.js",
+		"bench": "./run-benchmarks.sh",
+		"lint": "biome check .",
+		"format": "biome format --write .",
+		"check": "biome check --write .",
+		"ci": "biome ci .",
+		"prepublishOnly": "npm run build && npm test"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.2",
+		"@types/node": "^25.2.3",
+		"typescript": "^5.9.3"
+	}
+}

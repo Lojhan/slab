@@ -1,0 +1,22 @@
+# Source
+src/
+test/
+bench/
+benchmarks/
+prototype.ts
+
+# Config
+tsconfig.json
+biome.json
+.vscode/
+.github/
+
+# Scripts
+run-benchmarks.sh
+
+# Logs/Results
+npm-debug.log
+bench-results-*.md
+
+# Dependencies
+node_modules/
