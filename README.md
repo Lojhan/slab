@@ -2,7 +2,7 @@
 
 **High-Performance Shared Memory Structs for JavaScript & TypeScript.**
 
-[![CI](https://github.com/viniciuslojhan/slab/actions/workflows/ci.yml/badge.svg)](https://github.com/viniciuslojhan/slab/actions)
+[![CI](https://github.com/lojhan/slab/actions/workflows/ci.yml/badge.svg)](https://github.com/lojhan/slab/actions)
 [![npm](https://img.shields.io/npm/v/@lojhan/slab.svg)](https://www.npmjs.com/package/@lojhan/slab)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
