@@ -3,7 +3,8 @@
 **High-Performance Shared Memory Structs for JavaScript & TypeScript.**
 
 [![CI](https://github.com/viniciuslojhan/slab/actions/workflows/ci.yml/badge.svg)](https://github.com/viniciuslojhan/slab/actions)
-[![License: ISC](https://img.shields.io/badge/License-ISC-yellow.svg)](https://opensource.org/licenses/ISC)
+[![npm](https://img.shields.io/npm/v/@lojhan/slab.svg)](https://www.npmjs.com/package/@lojhan/slab)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **Slab** provides a strictly typed, C-style struct system backed by `SharedArrayBuffer`. It enables **zero-copy data sharing** between the main thread and Worker threads, eliminating serialization overhead and garbage collection pauses for high-frequency objects.
 
@@ -17,9 +18,9 @@
 ## 📦 Installation
 
 ```bash
-npm install slab
+npm install @lojhan/slab
 # or
-bun add slab
+bun add @lojhan/slab
 ```
 
 ## ⚡ Quick Start
@@ -27,7 +28,7 @@ bun add slab
 ### 1. Define your Schema
 
 ```typescript
-import { StructCollection, schema } from 'slab';
+import { StructCollection, schema } from '@lojhan/slab';
 
 // Define a reusable Point struct (Nested Schema)
 const Point = schema.create({
@@ -81,7 +82,7 @@ worker.postMessage({
 
 **Worker Thread (`worker.js`):**
 ```typescript
-import { StructCollection } from 'slab';
+import { StructCollection } from '@lojhan/slab';
 import { PlayerSchema } from './shared-schema'; // Shared definition
 
 self.onmessage = (e) => {
@@ -146,7 +147,7 @@ The main entry point. Manages the memory buffer.
 The recommended way to define schemas. It provides strict typing and enables nesting.
 
 ```typescript
-import { schema } from 'slab';
+import { schema } from '@lojhan/slab';
 
 const User = schema.create({
   id: schema.uint32(),
@@ -177,4 +178,4 @@ const users = new StructCollection(User.definition, 100);
 
 ## License
 
-ISC © Vinicius Lojhan
+MIT © Vinicius Lojhan
