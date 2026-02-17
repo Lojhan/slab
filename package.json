@@ -2,6 +2,10 @@
 	"name": "@lojhan/slab",
 	"version": "1.0.1",
 	"description": "High-performance SharedArrayBuffer structs for Node.js, Deno, Bun and Browser",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Lojhan/slab.git"
+	},
 	"keywords": [
 		"sharedarraybuffer",
 		"struct",
