@@ -11,7 +11,9 @@ describe("Struct Copy Operations", () => {
 				score: schema.float32(),
 				active: schema.boolean(),
 			});
-			const collection = new StructCollection(Player.definition, 2, undefined, { layout: "aos" });
+			const collection = new StructCollection(Player.definition, 2, undefined, {
+				layout: "aos",
+			});
 			const v0 = collection.get(0);
 			v0.id = 1;
 			v0.score = 100.5;
@@ -31,7 +33,9 @@ describe("Struct Copy Operations", () => {
 				score: schema.float32(),
 				active: schema.boolean(),
 			});
-			const collection = new StructCollection(Player.definition, 2, undefined, { layout: "soa" });
+			const collection = new StructCollection(Player.definition, 2, undefined, {
+				layout: "soa",
+			});
 			const v0 = collection.get(0);
 			v0.id = 1;
 			v0.score = 100.5;
@@ -51,7 +55,9 @@ describe("Struct Copy Operations", () => {
 			const User = schema.create({
 				name: schema.string(10),
 			});
-			const collection = new StructCollection(User.definition, 2, undefined, { layout: "aos" });
+			const collection = new StructCollection(User.definition, 2, undefined, {
+				layout: "aos",
+			});
 			const v0 = collection.get(0);
 			v0.name = "Alice";
 
@@ -64,7 +70,9 @@ describe("Struct Copy Operations", () => {
 			const User = schema.create({
 				name: schema.string(10),
 			});
-			const collection = new StructCollection(User.definition, 2, undefined, { layout: "soa" });
+			const collection = new StructCollection(User.definition, 2, undefined, {
+				layout: "soa",
+			});
 			const v0 = collection.get(0);
 			v0.name = "Bob";
 
@@ -127,7 +135,7 @@ describe("Struct Copy Operations", () => {
 
 			collection.copy(0, 1);
 			const v1 = collection.get(1);
-			
+
 			assert.equal(v1.mid.inner.val, 123);
 		});
 
@@ -173,7 +181,7 @@ describe("Struct Copy Operations", () => {
 
 			collection.copy(0, 1);
 			const v1 = collection.get(1);
-			
+
 			assert.equal(v1.mid.inner.val, 123);
 		});
 	});

@@ -121,11 +121,19 @@ export class StructCollection<T extends SchemaDefinition> {
 		dst.set(src);
 	}
 
-	private copySoA<T extends SchemaDefinition>(def: SchemaDefinition, from: InferSchema<T>, to: InferSchema<T>): void {
+	private copySoA<T extends SchemaDefinition>(
+		def: SchemaDefinition,
+		from: InferSchema<T>,
+		to: InferSchema<T>,
+	): void {
 		for (const key in def) {
 			const field = def[key];
 			if (typeof field === "object" && field.type === "struct") {
-				this.copySoA(field.definition, from[key] as SchemaDefinition, to[key] as SchemaDefinition);
+				this.copySoA(
+					field.definition,
+					from[key] as SchemaDefinition,
+					to[key] as SchemaDefinition,
+				);
 			} else {
 				(to as Record<string, unknown>)[key] = from[key];
 			}
