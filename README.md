@@ -1,181 +1,152 @@
-# slab
-
-**High-Performance Shared Memory Structs for JavaScript & TypeScript.**
+# @lojhan/slab
 
 [![CI](https://github.com/lojhan/slab/actions/workflows/ci.yml/badge.svg)](https://github.com/lojhan/slab/actions)
 [![npm](https://img.shields.io/npm/v/@lojhan/slab.svg)](https://www.npmjs.com/package/@lojhan/slab)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Slab** provides a strictly typed, C-style struct system backed by `SharedArrayBuffer`. It enables **zero-copy data sharing** between the main thread and Worker threads, eliminating serialization overhead and garbage collection pauses for high-frequency objects.
+**High-performance SharedArrayBuffer structs for Node.js, Deno, Bun, and Browsers.**
 
-## 🚀 Features
+`slab` allows you to create structured data layouts (structs) backed by `SharedArrayBuffer`, enabling true zero-copy data sharing between JavaScript workers and the main thread. 
 
-- **Zero-Copy Concurrency**: Pass data to Workers instantly. No `postMessage` serialization.
-- **Predictable Memory**: backed by a single `SharedArrayBuffer`. Zero GC pressure for updates.
-- **Type Safe**: Infers TypeScript interfaces directly from your schema definitions.
-- **C-Style Structs**: Define strict memory layouts (int8, float64, fixed-length strings).
+It is designed for high-performance applications like game engines, simulations, and data processing pipelines where minimizing garbage collection and transfer overhead is critical.
 
-## 📦 Installation
+## Features
+
+- **Zero-Copy Transfer**: Pass complex data structures to workers instantly (12x faster than `postMessage`).
+- **Parallel Processing**: Utilize all CPU cores efficiently without serialization overhead.
+- **Typed Structs**: Define C-like structs with strictly typed fields (Int32, Float64, Strings, etc.).
+- **Memory Efficient**: Uses a single `SharedArrayBuffer` slab for thousands of objects, reducing GC pressure.
+- **Flyweight Views**: Avoid creating thousands of JS objects; reuse a single "view" to iterate over millions of entities.
+- **Concurrency Primitives**: Built-in support for Atomic operations and Mutex locking.
+- **Dual Layout Support**: Switch between **AoS** (Array of Structures) and **SoA** (Structure of Arrays) with a single config flag.
+- **Sparse Sets**: Includes a high-performance Sparse Set implementation for Entity Component Systems (ECS).
+
+## Installation
 
 ```bash
 npm install @lojhan/slab
-# or
-bun add @lojhan/slab
 ```
 
 ## ⚡ Quick Start
 
-### 1. Define your Schema
+### 1. Define a Schema
 
 ```typescript
-import { StructCollection, schema } from '@lojhan/slab';
+import { schema, StructCollection } from "@lojhan/slab";
 
-// Define a reusable Point struct (Nested Schema)
-const Point = schema.create({
-  x: schema.float64(),
-  y: schema.float64()
-});
+// Define a "Player" struct
+const PlayerSchema = {
+    id: schema.uint32(),
+    x: schema.float32(),
+    y: schema.float32(),
+    health: schema.uint8(),
+    name: schema.string(16) // Fixed-size string (16 bytes)
+};
 
-// Define the main Entity struct
-const Player = schema.create({
-  id: schema.uint32(),
-  pos: Point, // Nesting works naturally
-  health: schema.uint8(),
-  name: schema.string(16)
-});
+// Create a collection that holds 1,000 players
+const players = new StructCollection(PlayerSchema, 1000);
 
-// Allocate memory for 10,000 players (Single contiguous buffer)
-const players = new StructCollection(Player.definition, 10_000);
+// Access a player at index 0
+const p1 = players.get(0);
+p1.id = 1;
+p1.x = 10.5;
+p1.y = 20.0;
+p1.health = 100;
+p1.name = "Hero";
+
+console.log(p1.name); // "Hero"
+console.log(p1.x);    // 10.5
 ```
 
-### 2. Read & Write Data
+### 2. Zero-Copy Worker Transfer
 
-```typescript
-// Access the first player
-const player = players.get(0);
-
-// Writing values updates the underlying SharedArrayBuffer directly
-player.id = 1;
-player.pos.x = 100.5; // Nested access
-player.pos.y = 200.5;
-player.health = 255;
-player.name = "Hero"; // Automatically encoded to UTF-8 bytes
-
-// Reading values decodes from the buffer
-console.log(player.name); // "Hero"
-console.log(player.pos.x); // 100.5
-```
-
-### 3. Share with Workers (The Killer Feature)
-
-Pass the raw buffer to a worker. The worker can view the *exact same memory* instantly.
+The real power of `slab` comes when using Workers. Instead of copying data, you share the underlying buffer.
 
 **Main Thread:**
 ```typescript
-const worker = new Worker('worker.js');
+import { Worker } from "node:worker_threads";
+import { StructCollection } from "@lojhan/slab";
+import { PlayerSchema } from "./schema"; 
 
-// ZERO COPY transfer. Just passing the reference.
-worker.postMessage({
-  buffer: players.buffer
+const players = new StructCollection(PlayerSchema, 10000);
+const worker = new Worker("./worker.js");
+
+// Send the SharedArrayBuffer to the worker (Zero Copy!)
+worker.postMessage(players.buffer);
+```
+
+**Worker Thread:**
+```typescript
+import { parentPort } from "node:worker_threads";
+import { StructCollection } from "@lojhan/slab";
+import { PlayerSchema } from "./schema";
+
+parentPort.on("message", (buffer) => {
+    // Reconstruct the collection from the shared buffer
+    const players = new StructCollection(PlayerSchema, 10000, buffer);
+    
+    // Create a reusable view for iteration (Flyweight Pattern)
+    const view = players.createView();
+    
+    for (let i = 0; i < 10000; i++) {
+        view.use(i); // Point the view to the i-th struct
+        view.x += 1.0; // Update shared memory directly
+    }
 });
 ```
 
-**Worker Thread (`worker.js`):**
+## Benchmarks
+
+Benchmarks run on Apple M1 (macOS).
+
+| Benchmark | Result | Improvement |
+|-----------|--------|-------------|
+| **Zero-Copy Transfer** | Struct vs Native Serialized | **11.88x Faster** |
+| **Allocation** | Struct vs Native Objects | **2.71x Faster** |
+| **Parallel Processing** | Struct vs Native Workers | **2.61x Faster** |
+| **Sparse Set Lookup** | Slab vs Native Map | **1.90x Faster** |
+
+*Note: Single-threaded reads/writes are generally slower than native V8 objects due to the overhead of `DataView` accessors. This library is optimized for multi-threaded/shared-memory scenarios.*
+
+## API Reference
+
+### Schemas
+Supported types:
+- `int8`, `uint8`, `int16`, `uint16`, `int32`, `uint32`
+- `float32`, `float64`
+- `boolean`
+- `string(length)` (UTF-8)
+- `mutex` (32-bit lock)
+
+### Collections
+- `new StructCollection(schema, capacity, buffer?, options?)`: Create a new collection.
+- `collection.get(index)`: Get a view for a specific index.
+- `collection.createView()`: Get a reusable flyweight view.
+- `collection.buffer`: The underlying `SharedArrayBuffer`.
+
+### Thread Safety
+For safe concurrent access, use the `mutex` type and locking methods:
+
 ```typescript
-import { StructCollection } from '@lojhan/slab';
-import { PlayerSchema } from './shared-schema'; // Shared definition
-
-self.onmessage = (e) => {
-  const { buffer } = e.data;
-
-  // Reconstruct the view over the existing memory
-  const players = new StructCollection(PlayerSchema, 10_000, buffer);
-
-  // Process 10,000 entities in parallel without copying data back and forth
-  for (let i = 0; i < 10_000; i++) {
-    const p = players.get(i);
-    p.x += 1.0; // Updates are visible to Main Thread immediately!
-  }
-
-  self.postMessage("done");
+const Data = {
+    value: schema.int32(),
+    mutex: schema.mutex()
 };
+const items = new StructCollection(Data, 10);
+const item = items.get(0);
+
+// Blocking lock
+item.lockMutex(); 
+item.value += 1;
+item.unlockMutex();
+
+// Non-blocking try-lock
+if (item.tryLockMutex()) {
+    item.value += 1;
+    item.unlockMutex();
+}
 ```
-
-## 📊 Performance & Benchmarks
-
-When should you use Slab?
-
-| Operation | Native Objects (V8) | Slab (SharedArrayBuffer) | Winner |
-| :--- | :--- | :--- | :--- |
-| **Allocation** | Slow (Heap Alloc + GC) | **Instant** (Single Buffer) | 🏆 Slab |
-| **Single-Thread Access** | **Fast** (Inline Caching) | Slower (DataView Overhead) | 🏆 Native |
-| **Worker Transfer** | Slow (Serialization/Copy) | **Instant** (Zero Copy) | 🏆 Slab |
-
-### Benchmark Results (1 Million Entities)
-
-1. **Allocation**: Slab is **~3x Faster** to allocate than creating 1M JS objects.
-2. **Read/Write**: Native JS objects are **~2x Faster** for single-threaded property access due to V8 optimization.
-3. **Parallel Processing**: Slab is **~6x Faster** when sharing data with workers because it avoids the structured clone algorithm overhead entirely.
-
-### 💡 Recommendation
-
-- **Use Slab** for:
-  - Particle systems (10k+ entities).
-  - Physics engines running in workers.
-  - Shared state in multiplayer games.
-  - High-frequency trading simulations.
-  - Any scenario where Garbage Collection pauses are unacceptable.
-
-- **Use Native Objects** for:
-  - Deeply nested data structures.
-  - General UI state.
-  - Simple, single-threaded applications.
-
-## 🛠 API
-
-### `StructCollection<Schema>`
-
-The main entry point. Manages the memory buffer.
-
-- `constructor(schema, capacity)`: Allocates new memory.
-- `constructor(schema, capacity, buffer)`: Uses existing memory (for Workers).
-- `get(index)`: Returns a view (Accessor) for the item at that index.
-- `buffer`: Access the raw `SharedArrayBuffer`.
-
-### `schema` Builder
-
-The recommended way to define schemas. It provides strict typing and enables nesting.
-
-```typescript
-import { schema } from '@lojhan/slab';
-
-const User = schema.create({
-  id: schema.uint32(),
-  active: schema.boolean(),
-  name: schema.string(32),
-  stats: schema.create({ // Nested definition
-    score: schema.float32(),
-    rank: schema.uint8()
-  })
-});
-
-// Pass User.definition to StructCollection
-const users = new StructCollection(User.definition, 100);
-```
-
-### Schema Types
-
-| Helper | Description | Size |
-| :--- | :--- | :--- |
-| `schema.int8()` / `uint8()` | 8-bit integer | 1 |
-| `schema.int16()` / `uint16()` | 16-bit integer | 2 |
-| `schema.int32()` / `uint32()` | 32-bit integer | 4 |
-| `schema.float32()` | 32-bit float | 4 |
-| `schema.float64()` | 64-bit float | 8 |
-| `schema.boolean()` | Boolean (0/1) | 1 |
-| `schema.string(N)` | Fixed-length UTF-8 string | N |
-| `schema.create({...})` | Nested struct definition | Variadic |
 
 ## License
 
-MIT © Vinicius Lojhan
+MIT © [Vinicius Lojhan](https://github.com/Lojhan)

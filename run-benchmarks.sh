@@ -27,4 +27,24 @@ hyperfine --warmup 2 \
   --export-markdown bench-results-parallel.md \
   'bun run benchmarks/parallel.ts native' 'bun run benchmarks/parallel.ts struct'
 
+echo "--- 5. SoA vs AoS (Worker Execution) ---"
+hyperfine --warmup 2 \
+  --export-markdown bench-results-soa-workers.md \
+  'bun run benchmarks/soa/main.ts aos' 'bun run benchmarks/soa/main.ts soa'
+
+echo "--- 6. Concurrency Primitives (Worker Contention) ---"
+hyperfine --warmup 2 \
+  --export-markdown bench-results-concurrency-workers.md \
+  'bun run benchmarks/concurrency/main.ts atomic' 'bun run benchmarks/concurrency/main.ts mutex'
+
+echo "--- 7. Zero-Copy / Flyweight Transfer (Worker) ---"
+hyperfine --warmup 2 \
+  --export-markdown bench-results-flyweight-workers.md \
+  'bun run benchmarks/flyweight/main.ts serialized' 'bun run benchmarks/flyweight/main.ts shared'
+
+echo "--- 8. Sparse Set (Worker Lookup) ---"
+hyperfine --warmup 2 \
+  --export-markdown bench-results-sparse-set-workers.md \
+  'bun run benchmarks/sparse-set/main.ts native' 'bun run benchmarks/sparse-set/main.ts sparse-set'
+
 echo "Done! Results saved to bench-results-*.md files."

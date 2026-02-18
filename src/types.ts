@@ -11,7 +11,8 @@ export type PrimitiveType =
 	| "uint32"
 	| "float32"
 	| "float64"
-	| "boolean";
+	| "boolean"
+	| "mutex";
 
 /**
  * Represents a fixed-length string field in a schema definition.
@@ -50,6 +51,60 @@ export type SchemaDefinition = {
 	[key: string]: SchemaField;
 };
 
+type Capitalize<S extends string> = S extends `${infer First}${infer Rest}`
+	? `${Uppercase<First>}${Rest}`
+	: S;
+
+type AtomicMethods<K extends string> = {
+	[P in `atomicAdd${Capitalize<K>}`]: (val: number) => number;
+} & {
+	[P in `atomicSub${Capitalize<K>}`]: (val: number) => number;
+} & {
+	[P in `atomicAnd${Capitalize<K>}`]: (val: number) => number;
+} & {
+	[P in `atomicOr${Capitalize<K>}`]: (val: number) => number;
+} & {
+	[P in `atomicXor${Capitalize<K>}`]: (val: number) => number;
+} & {
+	[P in `atomicExchange${Capitalize<K>}`]: (val: number) => number;
+} & {
+	[P in `atomicCompareExchange${Capitalize<K>}`]: (
+		expected: number,
+		replacement: number,
+	) => number;
+};
+
+type MutexMethods<K extends string> = {
+	[P in `lock${Capitalize<K>}`]: () => void;
+} & {
+	[P in `unlock${Capitalize<K>}`]: () => void;
+} & {
+	[P in `tryLock${Capitalize<K>}`]: () => boolean;
+};
+
+// biome-ignore lint/suspicious/noExplicitAny: Standard U2I pattern
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (
+	k: infer I,
+) => void
+	? I
+	: never;
+
+type FieldMethods<T extends SchemaDefinition> = UnionToIntersection<
+	{
+		[K in keyof T]: T[K] extends
+			| "int8"
+			| "uint8"
+			| "int16"
+			| "uint16"
+			| "int32"
+			| "uint32"
+			? AtomicMethods<K & string>
+			: T[K] extends "mutex"
+				? MutexMethods<K & string>
+				: never;
+	}[keyof T]
+>;
+
 /**
  * Utility type to infer the TypeScript type for a given schema field.
  */
@@ -67,7 +122,7 @@ export type InferType<T extends SchemaField> = T extends "boolean"
  */
 export type InferSchema<T extends SchemaDefinition> = {
 	[K in keyof T]: InferType<T[K]>;
-};
+} & FieldMethods<T>;
 
 /**
  * A map of primitive types to their size in bytes.
@@ -83,4 +138,5 @@ export const TYPE_SIZES: Record<PrimitiveType, number> = {
 	float32: 4,
 	float64: 8,
 	boolean: 1,
+	mutex: 4,
 };
