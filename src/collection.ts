@@ -106,41 +106,10 @@ export class StructCollection<T extends SchemaDefinition> {
 		const structSize = this.schema.size;
 
 		if (this.layout === "soa") {
-			// Get field accessors or iterate manually?
-			// createSoAStructClass gives us accessors but maybe slow to instantiate just for copy.
-			// However, we can use a temporary view.
 			const vFrom = this.get(fromIndex);
 			const vTo = this.get(toIndex);
-			// Iterate keys and copy? Types are mismatched (any).
-			// Efficient way: direct memory copy of each array slice.
-			// But we don't have direct access to internal offsets of the SoA layout easily.
-
-			// Re-use logic from createSoAStructClass which calculates offsets?
-			// Maybe StructCollection should calculate offsets once and store them?
-			// Yes, refactoring schema/layout logic would be better but separate issue.
-
-			// For now, let's use the views. It's slower but correct.
-			// Ideally we want memcpy for bulk moves.
-
-			// Actually, let's just use the view properties.
-			for (const key of this.schema.offsets.keys()) {
-				const val = vFrom[key];
-				vTo[key] = val; // Handles nested structs?
-				// If nested struct, val is a View. copy needs deep copy?
-				// Creating a view returns a reference. assigning reference to view property
-				// acts as setter if property is primitive.
-				// If property is struct, the setter logic in generic view is not defined for object assignment.
-				// In createStructClass:
-				/*
-				if (struct) {
-					Object.defineProperty(..., { get: ... })
-					// No Setter!
-				}
-				*/
-				// So we cannot just assign vTo.nested = vFrom.nested.
-				// We must recurse.
-			}
-			return; // TODO: Implement efficient SoA copy
+			this.copySoA(this.schema.definition, vFrom, vTo);
+			return;
 		}
 
 		// AoS is simple memcpy
@@ -150,5 +119,16 @@ export class StructCollection<T extends SchemaDefinition> {
 		const src = new Uint8Array(this.buffer, srcStart, structSize);
 		const dst = new Uint8Array(this.buffer, dstStart, structSize);
 		dst.set(src);
+	}
+
+	private copySoA<T extends SchemaDefinition>(def: SchemaDefinition, from: InferSchema<T>, to: InferSchema<T>): void {
+		for (const key in def) {
+			const field = def[key];
+			if (typeof field === "object" && field.type === "struct") {
+				this.copySoA(field.definition, from[key] as SchemaDefinition, to[key] as SchemaDefinition);
+			} else {
+				(to as Record<string, unknown>)[key] = from[key];
+			}
+		}
 	}
 }
