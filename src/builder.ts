@@ -47,6 +47,8 @@ const primitives = {
 	float64: () => "float64" as const,
 	/** Boolean value (stored as 1 byte: 1 for true, 0 for false) */
 	boolean: () => "boolean" as const,
+	/** 32-bit Mutex for locking. 0 = Unlocked. 1 = Locked. */
+	mutex: () => "mutex" as const,
 };
 
 /**

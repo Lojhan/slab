@@ -1,4 +1,4 @@
-import { strict as assert } from "node:assert";
+import assert from "node:assert/strict";
 import { test } from "node:test";
 import { StructCollection, schema } from "../src/index.js";
 
